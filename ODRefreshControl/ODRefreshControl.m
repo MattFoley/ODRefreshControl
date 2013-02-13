@@ -83,22 +83,22 @@ static inline CGFloat lerp(CGFloat a, CGFloat b, CGFloat p)
         
         _shapeLayer = [CAShapeLayer layer];
         _shapeLayer.fillColor = [_tintColor CGColor];
-        _shapeLayer.strokeColor = [[[UIColor darkGrayColor] colorWithAlphaComponent:0.5] CGColor];
-        _shapeLayer.lineWidth = 0.5;
-        _shapeLayer.shadowColor = [[UIColor blackColor] CGColor];
+        _shapeLayer.strokeColor = [[[UIColor brownColor] colorWithAlphaComponent:0.5] CGColor];
+        _shapeLayer.lineWidth = 2;
+        _shapeLayer.shadowColor = [[UIColor brownColor] CGColor];
         _shapeLayer.shadowOffset = CGSizeMake(0, 1);
         _shapeLayer.shadowOpacity = 0.4;
-        _shapeLayer.shadowRadius = 0.5;
+        _shapeLayer.shadowRadius = 1.5;
         [self.layer addSublayer:_shapeLayer];
         
         _arrowLayer = [CAShapeLayer layer];
         _arrowLayer.strokeColor = [[[UIColor darkGrayColor] colorWithAlphaComponent:0.5] CGColor];
         _arrowLayer.lineWidth = 0.5;
-        _arrowLayer.fillColor = [[UIColor whiteColor] CGColor];
+        _arrowLayer.fillColor = [UIColorFromRGB(0xf7ecda) CGColor];
         [_shapeLayer addSublayer:_arrowLayer];
         
         _highlightLayer = [CAShapeLayer layer];
-        _highlightLayer.fillColor = [[[UIColor whiteColor] colorWithAlphaComponent:0.2] CGColor];
+        _highlightLayer.fillColor = [[[UIColor brownColor] colorWithAlphaComponent:0.4] CGColor];
         [_shapeLayer addSublayer:_highlightLayer];
     }
     return self;
@@ -234,11 +234,6 @@ static inline CGFloat lerp(CGFloat a, CGFloat b, CGFloat p)
                 _canRefresh = YES;
                 _didSetInset = NO;
             } else {
-                dontDraw = YES;
-            }
-        } else {
-            if (offset >= 0) {
-                // Don't draw if the control is not visible
                 dontDraw = YES;
             }
         }
@@ -423,35 +418,40 @@ static inline CGFloat lerp(CGFloat a, CGFloat b, CGFloat p)
 
 - (void)endRefreshing
 {
-    if (_refreshing) {
-        self.refreshing = NO;
-        // Create a temporary retain-cycle, so the scrollView won't be released
-        // halfway through the end animation.
-        // This allows for the refresh control to clean up the observer,
-        // in the case the scrollView is released while the animation is running
-        __block UIScrollView *blockScrollView = self.scrollView;
-        [UIView animateWithDuration:0.4 animations:^{
-            _ignoreInset = YES;
-            [blockScrollView setContentInset:self.originalContentInset];
-            _ignoreInset = NO;
-            _activity.alpha = 0;
-            _activity.layer.transform = CATransform3DMakeScale(0.1, 0.1, 1);
-        } completion:^(BOOL finished) {
-            [_shapeLayer removeAllAnimations];
-            _shapeLayer.path = nil;
-            _shapeLayer.shadowPath = nil;
-            _shapeLayer.position = CGPointZero;
-            [_arrowLayer removeAllAnimations];
-            _arrowLayer.path = nil;
-            [_highlightLayer removeAllAnimations];
-            _highlightLayer.path = nil;
-            // We need to use the scrollView somehow in the end block,
-            // or it'll get released in the animation block.
-            _ignoreInset = YES;
-            [blockScrollView setContentInset:self.originalContentInset];
-            _ignoreInset = NO;
-        }];
-    }
+    double delayInSeconds = 1.0;
+    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+    dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+        
+        if (_refreshing) {
+            self.refreshing = NO;
+            // Create a temporary retain-cycle, so the scrollView won't be released
+            // halfway through the end animation.
+            // This allows for the refresh control to clean up the observer,
+            // in the case the scrollView is released while the animation is running
+            __block UIScrollView *blockScrollView = self.scrollView;
+            _shapeLayer.position = CGPointMake(0, 0);
+            [UIView animateWithDuration:0.4 animations:^{
+                _ignoreInset = YES;
+                [blockScrollView setContentInset:self.originalContentInset];
+                _ignoreInset = NO;
+                _activity.alpha = 0;
+                _activity.layer.transform = CATransform3DMakeScale(0.1, 0.1, 1);
+            } completion:^(BOOL finished) {
+                [_shapeLayer removeAllAnimations];
+                //_shapeLayer.path = nil;
+                //_shapeLayer.shadowPath = nil;
+                [_arrowLayer removeAllAnimations];
+                //_arrowLayer.path = nil;
+                [_highlightLayer removeAllAnimations];
+                //_highlightLayer.path = nil;
+                // We need to use the scrollView somehow in the end block,
+                // or it'll get released in the animation block.
+                _ignoreInset = YES;
+                [blockScrollView setContentInset:self.originalContentInset];
+                _ignoreInset = NO;
+            }];
+        }
+    });
 }
 
 @end
